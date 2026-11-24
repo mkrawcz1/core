@@ -18,7 +18,9 @@ from .const import (
     ATTR_SYSTEM_FIRMWARE,
     BACKUP,
     MIKROTIK_SERVICES,
+    REBOOT,
     ROUTERBOARD,
+    ROUTERBOARD_UPDATE,
     UPDATE,
 )
 from .coordinator import MikrotikConfigEntry
@@ -52,7 +54,7 @@ UPDATES = {
         release_notes="https://cdn.mikrotik.com/routeros/{version}/CHANGELOG",
     ),
     MikrotikUpdateEntityDescription(
-        key="routerboard-update",
+        key=ROUTERBOARD_UPDATE,
         translation_key="routerboard_update",
         device_class=UpdateDeviceClass.FIRMWARE,
         entity_category=EntityCategory.CONFIG,
@@ -140,3 +142,8 @@ class MikrotikUpdateEntity(MikrotikEntity, UpdateEntity):
                 self.coordinator.api.command,
                 MIKROTIK_SERVICES[self.entity_description.key],
             )
+            if self.entity_description.key == ROUTERBOARD_UPDATE:
+                await self.hass.async_add_executor_job(
+                    self.coordinator.api.command,
+                    MIKROTIK_SERVICES[REBOOT],
+                )
