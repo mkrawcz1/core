@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from pytest_homeassistant.common import snapshot_platform
@@ -42,18 +42,18 @@ async def test_update_entities(
 
 
 @pytest.mark.parametrize(
-    ("setup_kwargs", "entity_id", "expected_command"),
+    ("setup_kwargs", "entity_id", "expected_commands"),
     [
         pytest.param(
             UPDATE_DATA[0],
             FW_UPDATE_ENTITY_ID,
-            "/system/package/update/install",
+            [call("/system/package/update/install")],
             id="firmware",
         ),
         pytest.param(
             ROUTERBOARD_DATA[0],
             ROUTERBOARD_UPDATE_ENTITY_ID,
-            "/system/routerboard/upgrade",
+            [call("/system/routerboard/upgrade"), call("/system/reboot")],
             id="routerboard",
         ),
     ],
@@ -63,10 +63,12 @@ async def test_update_install(
     mock_api: MagicMock,
     setup_kwargs: dict[str, Any],
     entity_id: str,
-    expected_command: str,
+    expected_commands: list,
 ) -> None:
     """Test installing a Mikrotik firmware update."""
     await setup_mikrotik_entry(hass, **setup_kwargs)
+
+    mock_api.reset_mock()
 
     await hass.services.async_call(
         UPDATE_DOMAIN,
@@ -75,7 +77,7 @@ async def test_update_install(
         blocking=True,
     )
 
-    mock_api.assert_called_with(expected_command)
+    assert mock_api.call_args_list == expected_commands
 
 
 async def test_firmware_update_install_with_backup(
